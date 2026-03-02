@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="[50,55)"
+loaderVersion="[55,56)"
 license="MIT"
 #issueTrackerURL="https://github.com/MyOrganization/MyMod/" #optional
 clientSideOnly=true
@@ -19,13 +19,13 @@ With Mineshark, you can!
 [[dependencies.mineshark]]
 modId="forge"
 mandatory=true
-versionRange="[50.0.9,55)"
+versionRange="[55.1,56)"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.mineshark]]
 modId="minecraft"
 mandatory=true
-versionRange="[1.20.6,1.21.5)"
+versionRange="[1.21.5,1.21.6)"
 ordering="NONE"
 side="BOTH"

@@ -23,7 +23,7 @@ public class InboundListener extends SimpleChannelInboundHandler<Packet> {
                 var info = Component.literal("[IN] " + msgname);
 
                 var k = MineShark.extractPacketInfo(msg);
-                info.setStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(k))));
+                info.setStyle(Style.EMPTY.withHoverEvent(new HoverEvent.ShowText(Component.literal(k))));
                 MineShark.queue(info);
             }
         }
