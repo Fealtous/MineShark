@@ -22,7 +22,7 @@ public class MineShark {
     private static final List<String> filter = new ArrayList<>();
     private static Mode mode = Mode.EXCLUDE;
     private static final ConcurrentLinkedQueue<Component> msgQueue = new ConcurrentLinkedQueue<>();
-    public MineShark(FMLJavaModLoadingContext context) {
+    public MineShark() {
         LogUtils.getLogger().warn("MineShark is enabled. I am not and do not claim to be a performance mod. If you are not using me for education, please remove me. Much love, MineShark <3.");
         ConnectionStartEvent.BUS.addListener(MineShark::onConnect);
         RegisterClientCommandsEvent.BUS.addListener(MineShark::registerClientCommands);
