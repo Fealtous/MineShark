@@ -1,24 +1,17 @@
 package dev.fealtous.mineshark;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.context.CommandContext;
 import com.mojang.logging.LogUtils;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
-import io.netty.channel.ChannelPromise;
-import io.netty.channel.SimpleChannelInboundHandler;
 import net.minecraft.client.Minecraft;
-import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.Packet;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.network.ConnectionStartEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import org.slf4j.Logger;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -28,9 +21,9 @@ public class MineShark {
     public static final String MODID = "mineshark";
     private static final List<String> filter = new ArrayList<>();
     private static Mode mode = Mode.EXCLUDE;
-//    private static boolean details = false;
     private static final ConcurrentLinkedQueue<Component> msgQueue = new ConcurrentLinkedQueue<>();
     public MineShark(FMLJavaModLoadingContext context) {
+        LogUtils.getLogger().warn("MineShark is enabled. I am not and do not claim to be a performance mod. If you are not using me for education, please remove me. Much love, MineShark <3.");
         ConnectionStartEvent.BUS.addListener(MineShark::onConnect);
         RegisterClientCommandsEvent.BUS.addListener(MineShark::registerClientCommands);
         TickEvent.ClientTickEvent.Post.BUS.addListener(MineShark::registerMsgConsumer);
@@ -84,13 +77,6 @@ public class MineShark {
                 useFilter(StringArgumentType.getString(ctx, "target").replaceAll("/", "*"), Opt.ADD);
                 return 1;
             }));
-        // todo make detail command.
-//        var detailCommand = Commands.literal("detail").executes((ctx) -> {
-//            details = !details;
-//            return 1;
-//        });
-
-
 
         event.getDispatcher().register(Commands.literal("mineshark").executes((ctx -> {
             chat(Component.literal("/mineshark enable in/out/all    | Turns mineshark on for a given packet direction"));
@@ -106,7 +92,6 @@ public class MineShark {
             .then(resetCommand)
             .then(modeCommand)
             .then(filterCommand)
-            //.then(detailCommand)
         );
     }
 
@@ -115,55 +100,7 @@ public class MineShark {
         event.getConnection().channel().pipeline().addBefore("packet_handler", OutboundListener.class.getName(), new OutboundListener());
     }
 
-    @SuppressWarnings("rawtypes")
-    static class InboundListener extends SimpleChannelInboundHandler<Packet> {
-        private static boolean enabled = false;
-        public InboundListener() {
-            super(false);
-        }
-        @Override
-        protected void channelRead0(ChannelHandlerContext ctx, Packet msg) throws Exception {
-            if (enabled) {
-                var msgname = msg.getClass().getSimpleName();
-                if (useFilter(msgname, Opt.CHECK)) {
-                    msgQueue.add(Component.literal("[IN] " + msgname));
-                }
-            }
-            ctx.fireChannelRead(msg);
-        }
-        protected static int enable(CommandContext<CommandSourceStack> ctx) {
-            enabled = true;
-            return 1;
-        }
-        protected static int disable(CommandContext<CommandSourceStack> ctx) {
-            enabled = false;
-            return 1;
-        }
-    }
-
-    static class OutboundListener extends ChannelOutboundHandlerAdapter {
-        private static boolean enabled = false;
-        @Override
-        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-            if (enabled) {
-                var msgname = msg.getClass().getSimpleName();
-                if (useFilter(msgname, Opt.CHECK)) {
-                    msgQueue.add(Component.literal("[OUT] " + msgname));
-                }
-            }
-            super.write(ctx, msg, promise);
-        }
-        protected static int enable(CommandContext<CommandSourceStack> ctx) {
-            enabled = true;
-            return 1;
-        }
-        protected static int disable(CommandContext<CommandSourceStack> ctx) {
-            enabled = false;
-            return 1;
-        }
-    }
-
-    private synchronized static boolean useFilter(String string, Opt opt) {
+    protected synchronized static boolean useFilter(String string, Opt opt) {
         switch (opt) {
             case ADD -> {
                 filter.add(string.toLowerCase());
@@ -181,6 +118,10 @@ public class MineShark {
         return false;
     }
 
+    public static void queue(Component msg) {
+        msgQueue.add(msg);
+    }
+
     private static void chat(Component msg) {
         Minecraft.getInstance().gui.getChat().addMessage(msg);
     }
@@ -189,9 +130,30 @@ public class MineShark {
         INCLUDE,
         EXCLUDE
     }
-    private enum Opt {
-        CLEAR,
-        CHECK,
-        ADD
+
+    protected static String extractPacketInfo(Object p) {
+        List<String> comps = new ArrayList<>();
+        var parent = p.getClass().getSuperclass();
+        // Grab superclass fields as well in case of child class just having a codec (e.g. ClientboundMoveEntityPacket$Pos)
+        // If there's some class which is >2 deep then whatever, this isn't meant to be holistic.
+        for (Field declaredField : parent.getDeclaredFields()) {
+            String name = declaredField.getName();
+            declaredField.setAccessible(true);
+            try {
+                comps.add(name + ": " + declaredField.get(p).toString() + "\n");
+            } catch (Exception e) {
+                comps.add("Unable to access: " + name + "\n");
+            }
+        }
+        for (Field declaredField : p.getClass().getDeclaredFields()) {
+            String name = declaredField.getName();
+            declaredField.setAccessible(true);
+            try {
+                comps.add(name + ": " + declaredField.get(p).toString() + "\n");
+            } catch (Exception e) {
+                comps.add("Unable to access: " + name + "\n");
+            }
+        }
+        return comps.stream().reduce("", String::concat);
     }
 }
