@@ -19,7 +19,7 @@ class OutboundListener extends ChannelOutboundHandlerAdapter {
                 var info = Component.literal("[OUT] " + msgname);
                 var k = MineShark.extractPacketInfo(msg);
 
-                info.setStyle(Style.EMPTY.withHoverEvent(new HoverEvent.ShowText(Component.literal(k))));
+                info.setStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(k))));
                 MineShark.queue(info);
             }
         }

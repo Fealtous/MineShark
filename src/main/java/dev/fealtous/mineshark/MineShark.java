@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.network.ConnectionStartEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -24,12 +25,13 @@ public class MineShark {
     private static final ConcurrentLinkedQueue<Component> msgQueue = new ConcurrentLinkedQueue<>();
     public MineShark() {
         LogUtils.getLogger().warn("MineShark is enabled. I am not and do not claim to be a performance mod. If you are not using me for education, please remove me. Much love, MineShark <3.");
-        ConnectionStartEvent.BUS.addListener(MineShark::onConnect);
-        RegisterClientCommandsEvent.BUS.addListener(MineShark::registerClientCommands);
-        TickEvent.ClientTickEvent.Post.BUS.addListener(MineShark::registerMsgConsumer);
+        MinecraftForge.EVENT_BUS.addListener(MineShark::onConnect);
+        MinecraftForge.EVENT_BUS.addListener(MineShark::registerClientCommands);
+        MinecraftForge.EVENT_BUS.addListener(MineShark::registerMsgConsumer);
     }
 
-    public static void registerMsgConsumer(TickEvent.ClientTickEvent.Post event) {
+    public static void registerMsgConsumer(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
         while (!msgQueue.isEmpty()) {
             chat(msgQueue.poll());
         }
